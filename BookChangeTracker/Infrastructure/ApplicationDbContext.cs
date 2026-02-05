@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace BookChangeTracker.Infrastructure;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+public class ApplicationDbContext(
+    DbContextOptions<ApplicationDbContext> options,
+    IDomainEventPublisher eventPublisher)
     : DbContext(options)
 {
     public DbSet<Book> Books { get; set; }
@@ -88,6 +90,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         CapturePropertyChanges();
+        await ProcessDomainEvents();
 
         return await base.SaveChangesAsync(cancellationToken);
     }
@@ -128,4 +131,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         };
         BookChangeLogs.Add(changeLog);
     }
+
+// TODO: optimizations - WhenAll?
+    private async Task ProcessDomainEvents()
+    {
+        var books = ChangeTracker.Entries<Book>()
+            .Select(e => e.Entity)
+            .Where(b => b.DomainEvents.Any())
+            .ToList();
+
+        foreach (var book in books)
+        {
+            foreach (var domainEvent in book.DomainEvents)
+            {
+                await eventPublisher.PublishAsync(domainEvent);
+            }
+            book.ClearDomainEvents();
+        }
+    }
 }
+
