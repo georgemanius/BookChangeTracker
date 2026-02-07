@@ -15,8 +15,6 @@ builder.Services
     .AddDomainEventHandling()
     .AddSwagger();
 
-builder.Services.AddScoped<IChangeTrackingService, ChangeTrackingService>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -169,13 +167,13 @@ booksGroup.MapPut("{id}", async (
     if (book is null)
         return Results.NotFound();
 
-    if (!string.IsNullOrEmpty(request.Title) && request.Title != book.Title)
+    if (!string.IsNullOrEmpty(request.Title))
         book.Title = request.Title;
 
-    if (!string.IsNullOrEmpty(request.Description) && request.Description != book.Description)
+    if (!string.IsNullOrEmpty(request.Description))
         book.Description = request.Description;
 
-    if (request.PublishDate.HasValue && request.PublishDate != book.PublishDate)
+    if (request.PublishDate.HasValue)
         book.PublishDate = request.PublishDate.Value;
 
     context.Books.Update(book);

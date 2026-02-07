@@ -17,6 +17,8 @@ public class Book
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
     
+    public void AddDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    
     public void AddAuthor(Author author)
     {
         if (BookAuthors.All(ba => ba.AuthorId != author.Id))
