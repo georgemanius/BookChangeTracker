@@ -61,9 +61,11 @@ authorsGroup.MapGet("", async (ApplicationDbContext context) =>
 .WithDescription("Get all authors");
 
 // POST /api/authors
-authorsGroup.MapPost("", async (ApplicationDbContext context, CreateAuthorRequest dto) =>
+authorsGroup.MapPost("", async (
+    ApplicationDbContext context,
+    CreateAuthorRequest request) =>
 {
-    var author = new Author { Name = dto.Name };
+    var author = new Author { Name = request.Name };
     context.Authors.Add(author);
     await context.SaveChangesAsync();
 
@@ -100,7 +102,9 @@ booksGroup.MapGet("", async (ApplicationDbContext context) =>
 .WithDescription("Get all books with their authors");
 
 // GET /api/books/{id}
-booksGroup.MapGet("{id}", async (int id, ApplicationDbContext context) =>
+booksGroup.MapGet("{id}", async (
+    int id,
+    ApplicationDbContext context) =>
 {
     var book = await context.Books
         .Include(b => b.BookAuthors)
@@ -125,13 +129,15 @@ booksGroup.MapGet("{id}", async (int id, ApplicationDbContext context) =>
 .WithDescription("Get a specific book by ID");
 
 // POST /api/books
-booksGroup.MapPost("", async (ApplicationDbContext context, CreateBookRequest dto) =>
+booksGroup.MapPost("", async (
+    ApplicationDbContext context,
+    CreateBookRequest request) =>
 {
     var book = new Book
     {
-        Title = dto.Title,
-        Description = dto.Description,
-        PublishDate = dto.PublishDate
+        Title = request.Title,
+        Description = request.Description,
+        PublishDate = request.PublishDate
     };
 
     context.Books.Add(book);
@@ -152,20 +158,24 @@ booksGroup.MapPost("", async (ApplicationDbContext context, CreateBookRequest dt
 .WithDescription("Create a new book");
 
 // PUT /api/books/{id}
-booksGroup.MapPut("{id}", async (int id, ApplicationDbContext context, UpdateBookRequest dto, HttpContext httpContext) =>
+booksGroup.MapPut("{id}", async (
+    int id,
+    ApplicationDbContext context,
+    UpdateBookRequest request,
+    HttpContext httpContext) =>
 {
     var book = await context.Books.FindAsync(id);
     if (book is null)
         return Results.NotFound();
 
-    if (!string.IsNullOrEmpty(dto.Title) && dto.Title != book.Title)
-        book.Title = dto.Title;
+    if (!string.IsNullOrEmpty(request.Title) && request.Title != book.Title)
+        book.Title = request.Title;
 
-    if (!string.IsNullOrEmpty(dto.Description) && dto.Description != book.Description)
-        book.Description = dto.Description;
+    if (!string.IsNullOrEmpty(request.Description) && request.Description != book.Description)
+        book.Description = request.Description;
 
-    if (dto.PublishDate.HasValue && dto.PublishDate != book.PublishDate)
-        book.PublishDate = dto.PublishDate.Value;
+    if (request.PublishDate.HasValue && request.PublishDate != book.PublishDate)
+        book.PublishDate = request.PublishDate.Value;
 
     context.Books.Update(book);
     await context.SaveChangesAsync();
@@ -191,7 +201,11 @@ var bookAuthorsGroup = booksGroup.MapGroup("{id}/authors")
     .WithOpenApi();
 
 // POST /api/books/{id}/authors/{authorId}
-bookAuthorsGroup.MapPost("{authorId}", async (int id, int authorId, ApplicationDbContext context, HttpContext httpContext) =>
+bookAuthorsGroup.MapPost("{authorId}", async (
+    int id,
+    int authorId,
+    ApplicationDbContext context,
+    HttpContext httpContext) =>
 {
     var book = await context.Books.Include(b => b.BookAuthors).FirstOrDefaultAsync(b => b.Id == id);
     if (book is null)
@@ -223,7 +237,11 @@ bookAuthorsGroup.MapPost("{authorId}", async (int id, int authorId, ApplicationD
 .WithDescription("Add an author to a book");
 
 // DELETE /api/books/{id}/authors/{authorId}
-bookAuthorsGroup.MapDelete("{authorId}", async (int id, int authorId, ApplicationDbContext context, HttpContext httpContext) =>
+bookAuthorsGroup.MapDelete("{authorId}", async (
+    int id,
+    int authorId,
+    ApplicationDbContext context,
+    HttpContext httpContext) =>
 {
     var book = await context.Books.Include(b => b.BookAuthors).ThenInclude(ba => ba.Author).FirstOrDefaultAsync(b => b.Id == id);
     if (book is null)
