@@ -1,5 +1,3 @@
-using BookChangeTracker.Domain.Models;
-
 namespace BookChangeTracker.Domain.Models.Entities;
 
 public class BookChangeLog

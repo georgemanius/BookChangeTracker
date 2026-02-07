@@ -1,4 +1,3 @@
-using BookChangeTracker.Api;
 using BookChangeTracker.Api.Extensions;
 using BookChangeTracker.Api.Models.Requests;
 using BookChangeTracker.Api.Models.Responses;
