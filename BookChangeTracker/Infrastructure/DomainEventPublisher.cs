@@ -1,35 +1,51 @@
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
+
 namespace BookChangeTracker.Infrastructure;
 
-/// To keep the design simple and straightforward for the sake of this exercise - in-memory domain event bus.
-/// Ideally, we would use a DI-aware publisher that resolves handlers from IServiceProvider.
-/// TODO: make thread-safe
 public class DomainEventPublisher : IDomainEventPublisher
 {
-    private readonly Dictionary<Type, List<Delegate>> _subscribers = [];
+    private readonly ConcurrentDictionary<Type, ImmutableList<Delegate>> _subscribers = new();
 
     public void Subscribe<T>(Func<T, Task> handler) where T : class
     {
-        var eventType = typeof(T);
-        if (!_subscribers.TryGetValue(eventType, out List<Delegate>? value))
-        {
-            value = [];
-            _subscribers[eventType] = value;
-        }
+        ArgumentNullException.ThrowIfNull(handler);
 
-        value.Add(handler);
+        _subscribers.AddOrUpdate(
+            typeof(T),
+            _ => [handler],
+            (_, existingHandlers) => existingHandlers.Add(handler));
     }
 
     public async Task PublishAsync<T>(T @event) where T : class
     {
-        if (_subscribers.TryGetValue(typeof(T), out var handlers))
-        {
-            foreach (var handler in handlers)
+        ArgumentNullException.ThrowIfNull(@event);
+
+        if (!_subscribers.TryGetValue(typeof(T), out var handlers)) return;
+
+        var exceptions = new ConcurrentBag<Exception>();
+
+        var tasks = handlers
+            .OfType<Func<T, Task>>()
+            .Select(async handler =>
             {
-                if (handler is Func<T, Task> func)
+                try
                 {
-                    await func(@event);
+                    await handler(@event);
                 }
-            }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            });
+
+        await Task.WhenAll(tasks);
+
+        if (!exceptions.IsEmpty)
+        {
+            throw new AggregateException(
+                $"One or more handlers failed while processing event {typeof(T).Name}",
+                exceptions);
         }
     }
 }
