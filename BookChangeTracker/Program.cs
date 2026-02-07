@@ -1,36 +1,19 @@
 using BookChangeTracker.Infrastructure;
-using BookChangeTracker.Infrastructure.EventHandlers;
+using BookChangeTracker.Infrastructure.Extensions;
 using BookChangeTracker.Models.Domain;
 using BookChangeTracker.Models.Domain.Events;
-using BookChangeTracker.Models.Enums;
 using BookChangeTracker.Models.Requests;
 using BookChangeTracker.Models.Responses;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services
+    .AddApplicationDbContext(builder.Configuration)
+    .AddDomainEventHandling()
+    .AddSwagger();
 
-builder.Services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
 builder.Services.AddScoped<IChangeTrackingService, ChangeTrackingService>();
-
-// Register domain event handlers
-builder.Services.AddScoped<IEventHandler<AuthorAddedToBookEvent>, AuthorAddedEventHandler>();
-builder.Services.AddScoped<IEventHandler<AuthorRemovedFromBookEvent>, AuthorRemovedEventHandler>();
-builder.Services.AddScoped<IEventHandler<BookPropertyChangedEvent>, BookPropertyChangedEventHandler>();
-builder.Services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
-
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Book Change Tracker API",
-        Version = "v1",
-        Description = "API for tracking changes to book entities with pagination, filtering, and ordering"
-    });
-});
 
 var app = builder.Build();
 
