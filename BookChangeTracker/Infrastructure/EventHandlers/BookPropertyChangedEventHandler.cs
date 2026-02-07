@@ -16,7 +16,7 @@ public class BookPropertyChangedEventHandler(ApplicationDbContext context) : IEv
             Description = $"{@event.FieldName} changed from '{@event.OldValue}' to '{@event.NewValue}'",
             ChangedAt = @event.RaisedAt,
             ChangedBy = "System",
-            ChangeType = ChangeType.PropertyChanged
+            ChangeType = @event.ChangeType
         };
 
         context.BookChangeLogs.Add(changeLog);

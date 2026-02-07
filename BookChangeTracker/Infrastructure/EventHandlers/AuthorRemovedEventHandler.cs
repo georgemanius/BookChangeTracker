@@ -16,7 +16,7 @@ public class AuthorRemovedEventHandler(ApplicationDbContext context) : IEventHan
             Description = $"Author '{@event.AuthorName}' removed from book",
             ChangedAt = @event.RaisedAt,
             ChangedBy = "System",
-            ChangeType = ChangeType.AuthorRemoved
+            ChangeType = @event.ChangeType
         };
 
         context.BookChangeLogs.Add(changeLog);

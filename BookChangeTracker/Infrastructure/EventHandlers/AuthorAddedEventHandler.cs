@@ -16,7 +16,7 @@ public class AuthorAddedEventHandler(ApplicationDbContext context) : IEventHandl
             Description = $"Author '{@event.AuthorName}' added to book",
             ChangedAt = @event.RaisedAt,
             ChangedBy = "System",
-            ChangeType = ChangeType.AuthorAdded
+            ChangeType = @event.ChangeType
         };
 
         context.BookChangeLogs.Add(changeLog);

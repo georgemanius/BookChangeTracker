@@ -4,4 +4,7 @@ public record AuthorAddedToBookEvent(
     int BookId,
     int AuthorId,
     string AuthorName,
-    DateTime RaisedAt) : IDomainEvent;
+    DateTime RaisedAt) : IBookChangeEvent
+{
+    public ChangeType ChangeType => ChangeType.AuthorAdded;
+}

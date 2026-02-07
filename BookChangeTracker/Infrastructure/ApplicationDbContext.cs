@@ -104,7 +104,9 @@ public class ApplicationDbContext(
         foreach (var entry in entries)
         {
             var bookId = entry.Entity.Id;
-            var changedBy = "System"; // Default value - TODO: replace with actual user info once authorization is implemented
+            // TODO: introduce a service that utilizes IHttpContextAccessor to parse JWT claims to infer a current user
+            // (when authentication/authorization is implemented)
+            var changedBy = "System";
 
             RecordPropertyChange(entry, nameof(Book.Title), bookId, changedBy);
             RecordPropertyChange(entry, nameof(Book.Description), bookId, changedBy);

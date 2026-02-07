@@ -5,4 +5,7 @@ public record BookPropertyChangedEvent(
     string FieldName,
     string? OldValue,
     string? NewValue,
-    DateTime RaisedAt) : IDomainEvent;
+    DateTime RaisedAt) : IBookChangeEvent
+{
+    public ChangeType ChangeType => ChangeType.PropertyChanged;
+}
