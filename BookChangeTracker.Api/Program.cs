@@ -44,7 +44,7 @@ using (var scope = app.Services.CreateScope())
     await context.Database.MigrateAsync();
 }
 
-// ======================== API ROUTE GROUPS ========================
+// ENDPOINTS
 
 var authorsGroup = app.MapGroup("/api/authors")
     .WithTags("Authors")
@@ -78,7 +78,7 @@ authorsGroup.MapPost("", async (
 .Produces(400)
 .WithDescription("Create a new author");
 
-// ======================== BOOKS ROUTE GROUP ========================
+// BOOKS
 
 var booksGroup = app.MapGroup("/api/books")
     .WithTags("Books")
@@ -111,7 +111,7 @@ booksGroup.MapGet("{id}", async (
     var book = await context.Books
         .Include(b => b.BookAuthors)
         .ThenInclude(ba => ba.Author)
-        .FirstOrDefaultAsync(b => b.Id == id);
+        .SingleOrDefaultAsync(b => b.Id == id);
 
     if (book is null)
         return Results.NotFound();
@@ -195,7 +195,7 @@ booksGroup.MapPut("{id}", async (
 .Produces(404)
 .WithDescription("Update a book's properties");
 
-// ======================== BOOK AUTHORS ROUTE GROUP ========================
+// AUTHORS
 
 var bookAuthorsGroup = booksGroup.MapGroup("{id}/authors")
     .WithTags("Book Authors")
@@ -207,11 +207,14 @@ bookAuthorsGroup.MapPost("{authorId}", async (
     int authorId,
     ApplicationDbContext context) =>
 {
-    var book = await context.Books.Include(b => b.BookAuthors).FirstOrDefaultAsync(b => b.Id == id);
+    var book = await context.Books
+        .Include(b => b.BookAuthors)
+        .ThenInclude(bookAuthor => bookAuthor.Author)
+        .SingleOrDefaultAsync(b => b.Id == id);
     if (book is null)
         return Results.NotFound("Book not found");
 
-    var author = await context.Authors.FindAsync(authorId);
+    var author = await context.Authors.SingleOrDefaultAsync(a => a.Id == authorId);
     if (author is null)
         return Results.NotFound("Author not found");
 
@@ -242,7 +245,10 @@ bookAuthorsGroup.MapDelete("{authorId}", async (
     int authorId,
     ApplicationDbContext context) =>
 {
-    var book = await context.Books.Include(b => b.BookAuthors).ThenInclude(ba => ba.Author).FirstOrDefaultAsync(b => b.Id == id);
+    var book = await context.Books
+        .Include(b => b.BookAuthors)
+        .ThenInclude(ba => ba.Author)
+        .SingleOrDefaultAsync(b => b.Id == id);
     if (book is null)
         return Results.NotFound("Book not found");
 
@@ -269,7 +275,7 @@ bookAuthorsGroup.MapDelete("{authorId}", async (
 .Produces(404)
 .WithDescription("Remove an author from a book");
 
-// ======================== CHANGE LOG ROUTE GROUP ========================
+// BOOK CHANGES
 
 var changesGroup = booksGroup.MapGroup("{id}/changes")
     .WithTags("Change History")

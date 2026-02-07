@@ -19,7 +19,7 @@ public class Book
     
     public void AddAuthor(Author author)
     {
-        if (!BookAuthors.Any(ba => ba.AuthorId == author.Id))
+        if (BookAuthors.All(ba => ba.AuthorId != author.Id))
         {
             BookAuthors.Add(new BookAuthor
             {
@@ -33,16 +33,14 @@ public class Book
     
     public void RemoveAuthor(int authorId, string authorName)
     {
-        BookAuthor? bookAuthor = BookAuthors.FirstOrDefault(ba => ba.AuthorId == authorId);
-        if (bookAuthor is not null)
+        BookAuthor? bookAuthor = BookAuthors.SingleOrDefault(ba => ba.AuthorId == authorId);
+        if (bookAuthor is null)
         {
-            BookAuthors.Remove(bookAuthor);
-            _domainEvents.Add(new AuthorRemovedFromBookEvent(Id, authorId, authorName, DateTime.UtcNow));
+            return;
         }
+        BookAuthors.Remove(bookAuthor);
+        _domainEvents.Add(new AuthorRemovedFromBookEvent(Id, authorId, authorName, DateTime.UtcNow));
     }
     
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
-    }
+    public void ClearDomainEvents() => _domainEvents.Clear();
 }
