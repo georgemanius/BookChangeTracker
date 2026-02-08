@@ -2,6 +2,7 @@ using BookChangeTracker.Domain.Models.Entities;
 using BookChangeTracker.Infrastructure.Abstractions;
 using BookChangeTracker.Infrastructure.Models.Enums;
 using BookChangeTracker.Infrastructure.Repositories;
+using System.Linq.Expressions;
 
 namespace BookChangeTracker.Infrastructure.Extensions;
 
@@ -21,6 +22,12 @@ public static class QueryableExtensions
 
 public static class BookChangeLogRepositoryExtensions
 {
+    private static readonly Dictionary<ChangeLogSortFields, Expression<Func<BookChangeLog, object>>> FieldSelectors = new()
+    {
+        { ChangeLogSortFields.FieldName, cl => cl.FieldName },
+        { ChangeLogSortFields.ChangedAt, cl => cl.ChangedAt }
+    };
+
     public static IQueryable<BookChangeLog> ApplyFiltering(
         this IQueryable<BookChangeLog> query,
         int bookId,
@@ -50,14 +57,11 @@ public static class BookChangeLogRepositoryExtensions
     {
         var isDescending = sortOrder is SortOrder.Descending;
 
-        return orderBy switch
-        {
-            ChangeLogSortFields.FieldName => isDescending 
-                ? query.OrderByDescending(cl => cl.FieldName)
-                : query.OrderBy(cl => cl.FieldName),
-            _ => isDescending 
-                ? query.OrderByDescending(cl => cl.ChangedAt)
-                : query.OrderBy(cl => cl.ChangedAt)
-        };
+        if (!FieldSelectors.TryGetValue(orderBy, out var fieldSelector))
+            fieldSelector = FieldSelectors[ChangeLogSortFields.ChangedAt];
+
+        return isDescending 
+            ? query.OrderByDescending(fieldSelector)
+            : query.OrderBy(fieldSelector);
     }
 }
