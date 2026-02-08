@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: bookchangetracker-db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Password123!"
+    ports:
+      - "1433:1433"
+
+  api:
+    build:
+      context: .
+      dockerfile: BookChangeTracker.Api/Dockerfile
+    container_name: bookchangetracker-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=db;Database=BookChangeTracker;User Id=sa;Password=Password123!;TrustServerCertificate=True;"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
