@@ -1,34 +1,30 @@
-using System.Linq.Expressions;
-using BookChangeTracker.Api.Models.Enums;
-using BookChangeTracker.Api.Models.Requests;
 using BookChangeTracker.Domain.Models.Entities;
+using BookChangeTracker.Infrastructure.Abstractions;
+using BookChangeTracker.Infrastructure.Models.Enums;
+using BookChangeTracker.Infrastructure.Repositories;
 
-namespace BookChangeTracker.Api.Extensions;
+namespace BookChangeTracker.Infrastructure.Extensions;
 
-public static class PaginationExtensions
+public static class QueryableExtensions
 {
     public static IQueryable<T> ApplyPagination<T>(
         this IQueryable<T> query,
-        PaginationRequest pagination)
+        int pageNumber,
+        int pageSize)
+        where T : class
     {
         return query
-            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
-            .Take(pagination.PageSize);
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize);
     }
 }
 
-public static class BookChangeLogQueryExtensions
+public static class BookChangeLogRepositoryExtensions
 {
-    private static readonly Dictionary<ChangeLogSortFields, Expression<Func<BookChangeLog, object>>> SortColumnMap = new()
-    {
-        [ChangeLogSortFields.ChangedAt] = log => log.ChangedAt,
-        [ChangeLogSortFields.FieldName] = log => log.FieldName
-    };
-
     public static IQueryable<BookChangeLog> ApplyFiltering(
         this IQueryable<BookChangeLog> query,
         int bookId,
-        ChangeLogFilterRequest filter)
+        IFilterDto filter)
     {
         query = query.Where(cl => cl.BookId == bookId);
 
@@ -52,11 +48,16 @@ public static class BookChangeLogQueryExtensions
         ChangeLogSortFields orderBy,
         SortOrder sortOrder)
     {
-        var keySelector = SortColumnMap[orderBy];
         var isDescending = sortOrder is SortOrder.Descending;
 
-        return isDescending
-            ? query.OrderByDescending(keySelector)
-            : query.OrderBy(keySelector);
+        return orderBy switch
+        {
+            ChangeLogSortFields.FieldName => isDescending 
+                ? query.OrderByDescending(cl => cl.FieldName)
+                : query.OrderBy(cl => cl.FieldName),
+            _ => isDescending 
+                ? query.OrderByDescending(cl => cl.ChangedAt)
+                : query.OrderBy(cl => cl.ChangedAt)
+        };
     }
 }
