@@ -37,10 +37,7 @@ public class BookService(IBookRepository bookRepository, IAuthorRepository autho
         return updated.ToBookDto();
     }
 
-    public async Task<bool> DeleteAsync(int id)
-    {
-        return await bookRepository.DeleteAsync(id);
-    }
+    public async Task<bool> DeleteAsync(int id) => await bookRepository.DeleteAsync(id);
 
     public async Task<BookDto?> AddAuthorAsync(int bookId, int authorId)
     {

@@ -126,12 +126,12 @@ booksGroup.MapPut("{id:int}", async (
 
 // AUTHORS
 
-var bookAuthorsGroup = booksGroup.MapGroup("{id}/authors")
+var bookAuthorsGroup = booksGroup.MapGroup("{id:int}/authors")
     .WithTags("Book Authors")
     .WithOpenApi();
 
 // POST /api/books/{id}/authors/{authorId}
-bookAuthorsGroup.MapPost("{authorId}", async (
+bookAuthorsGroup.MapPost("{authorId:int}", async (
     int id,
     int authorId,
     IBookService bookService) =>
@@ -149,7 +149,7 @@ bookAuthorsGroup.MapPost("{authorId}", async (
 .WithDescription("Add an author to a book");
 
 // DELETE /api/books/{id}/authors/{authorId}
-bookAuthorsGroup.MapDelete("{authorId}", async (
+bookAuthorsGroup.MapDelete("{authorId:int}", async (
     int id,
     int authorId,
     IBookService bookService) =>
@@ -167,7 +167,7 @@ bookAuthorsGroup.MapDelete("{authorId}", async (
 
 // BOOK CHANGES
 
-var changesGroup = booksGroup.MapGroup("{id}/changes")
+var changesGroup = booksGroup.MapGroup("{id:int}/changes")
     .WithTags("Change History")
     .WithOpenApi();
 

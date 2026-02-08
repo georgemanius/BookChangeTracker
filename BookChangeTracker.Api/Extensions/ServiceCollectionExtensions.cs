@@ -6,6 +6,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSwagger(this IServiceCollection services)
     {
+        services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
@@ -30,7 +31,7 @@ public static class WebApplicationExtensions
             app.UseSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "Book Change Tracker API v1");
-                options.RoutePrefix = string.Empty;
+                options.RoutePrefix = "swagger";
             });
         }
 
