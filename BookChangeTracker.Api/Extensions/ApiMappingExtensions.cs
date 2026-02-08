@@ -29,10 +29,15 @@ public static class ApiMappingExtensions
             request.OrderBy,
             request.SortOrder);
 
-    public static PaginationDto ToPaginationDto(this PaginationRequest request) =>
-        new(
-            request.PageNumber,
-            request.PageSize);
+    public static PaginationDto ToPaginationDto(this PaginationRequest request)
+    {
+        const int DefaultPageNumber = 1;
+        const int DefaultPageSize = 20;
+        
+        return new(
+            request.PageNumber ?? DefaultPageNumber,
+            request.PageSize ?? DefaultPageSize);
+    }
 
     public static BookResponse ToResponse(this BookDto dto) =>
         new(

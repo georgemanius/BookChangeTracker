@@ -208,10 +208,11 @@ changesGroup.MapGet("", async (
     [AsParameters] ChangeLogFilterRequest filter,
     [AsParameters] PaginationRequest pagination) =>
 {
+    var paginationDto = pagination.ToPaginationDto();
     var result = await changeLogService.GetBookChangeLogsAsync(
         id,
         filter.ToChangeLogFilterDto(),
-        pagination.ToPaginationDto());
+        paginationDto);
 
     return result switch
     {
@@ -219,8 +220,8 @@ changesGroup.MapGet("", async (
             Results.Ok(new PagedResult<BookChangeLogResponse>(
                 success.Data.Logs.Select(l => l.ToResponse()).ToList(),
                 success.Data.TotalCount,
-                pagination.PageNumber,
-                pagination.PageSize)),
+                paginationDto.PageNumber,
+                paginationDto.PageSize)),
         Result.FailureResult failure => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
         _ => Results.StatusCode(500)
     };
