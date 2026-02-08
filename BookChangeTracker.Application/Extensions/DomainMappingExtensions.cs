@@ -52,5 +52,5 @@ public static class DomainMappingExtensions
             log.Description,
             log.ChangedBy,
             log.ChangeType.ToString(),
-            log.AuthorId);
+            log.TargetAuthorId);
 }

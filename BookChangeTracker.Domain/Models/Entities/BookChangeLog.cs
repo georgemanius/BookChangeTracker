@@ -20,5 +20,5 @@ public class BookChangeLog
 
     public ChangeType ChangeType { get; set; }
 
-    public int? AuthorId { get; set; }
+    public int? TargetAuthorId { get; set; }
 }

@@ -10,4 +10,4 @@ public record BookChangeLogDto(
     string Description,
     string ChangedBy,
     string ChangeType,
-    int? AuthorId);
+    int? TargetAuthorId);

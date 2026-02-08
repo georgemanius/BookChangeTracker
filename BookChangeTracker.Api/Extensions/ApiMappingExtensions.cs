@@ -55,5 +55,5 @@ public static class ApiMappingExtensions
             dto.Description,
             dto.ChangedBy,
             dto.ChangeType,
-            dto.AuthorId);
+            dto.TargetAuthorId);
 }

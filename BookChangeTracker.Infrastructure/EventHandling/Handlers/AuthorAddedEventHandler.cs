@@ -12,7 +12,7 @@ public class AuthorAddedEventHandler(IChangeLogRepository changeLogRepository) :
         var changeLog = new BookChangeLog
         {
             BookId = @event.BookId,
-            AuthorId = @event.AuthorId,
+            TargetAuthorId = @event.AuthorId,
             FieldName = "Authors",
             NewValue = @event.AuthorName,
             Description = $"Author '{@event.AuthorName}' added to book",

@@ -10,4 +10,4 @@ public record BookChangeLogResponse(
     string Description,
     string ChangedBy,
     string ChangeType,
-    int? AuthorId);
+    int? TargetAuthorId);

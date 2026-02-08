@@ -12,7 +12,7 @@ public class AuthorRemovedEventHandler(IChangeLogRepository changeLogRepository)
         var changeLog = new BookChangeLog
         {
             BookId = @event.BookId,
-            AuthorId = @event.AuthorId,
+            TargetAuthorId = @event.AuthorId,
             FieldName = "Authors",
             OldValue = @event.AuthorName,
             Description = $"Author '{@event.AuthorName}' removed from book",
