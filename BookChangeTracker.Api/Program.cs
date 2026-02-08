@@ -1,8 +1,9 @@
 using BookChangeTracker.Api.Extensions;
 using BookChangeTracker.Api.Models.Requests;
 using BookChangeTracker.Api.Models.Responses;
+using BookChangeTracker.Application.Abstractions;
+using BookChangeTracker.Application.Extensions;
 using BookChangeTracker.Domain.Abstractions;
-using BookChangeTracker.Domain.Models.Entities;
 using BookChangeTracker.Domain.Models.Events;
 using BookChangeTracker.Infrastructure;
 using BookChangeTracker.Infrastructure.Extensions;
@@ -11,27 +12,17 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddApplicationDbContext(builder.Configuration)
-    .AddDomainEventHandling()
+    .AddInfrastructure(builder.Configuration)
+    .AddApplication()
     .AddSwagger();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Book Change Tracker API v1");
-        options.RoutePrefix = string.Empty;
-    });
-}
-
+app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
-var eventPublisher = app.Services.GetRequiredService<IDomainEventPublisher>();
-var eventDispatcher = app.Services.GetRequiredService<IDomainEventDispatcher>();
+var eventPublisher = app.Services.GetRequiredService<IEventPublisher>();
+var eventDispatcher = app.Services.GetRequiredService<IEventDispatcher>();
 
 eventPublisher.Subscribe<IDomainEvent>(eventDispatcher.DispatchAsync);
 
@@ -49,12 +40,10 @@ var authorsGroup = app.MapGroup("/api/authors")
     .WithOpenApi();
 
 // GET /api/authors
-authorsGroup.MapGet("", async (ApplicationDbContext context) =>
+authorsGroup.MapGet("", async (IAuthorService authorService) =>
 {
-    var authors = await context.Authors
-        .Select(a => new AuthorResponse(a.Id, a.Name))
-        .ToListAsync();
-    return Results.Ok(authors);
+    var authors = await authorService.GetAllAsync();
+    return Results.Ok(authors.Select(a => a.ToResponse()).ToList());
 })
 .WithName("GetAuthors")
 .Produces<List<AuthorResponse>>(200)
@@ -62,14 +51,11 @@ authorsGroup.MapGet("", async (ApplicationDbContext context) =>
 
 // POST /api/authors
 authorsGroup.MapPost("", async (
-    ApplicationDbContext context,
+    IAuthorService authorService,
     CreateAuthorRequest request) =>
 {
-    var author = new Author { Name = request.Name };
-    context.Authors.Add(author);
-    await context.SaveChangesAsync();
-
-    return Results.Created($"/api/authors/{author.Id}", new AuthorResponse(author.Id, author.Name));
+    var author = await authorService.CreateAsync(request.ToCreateAuthorDto());
+    return Results.Created($"/api/authors/{author.Id}", author.ToResponse());
 })
 .WithName("CreateAuthor")
 .Produces<AuthorResponse>(201)
@@ -83,45 +69,26 @@ var booksGroup = app.MapGroup("/api/books")
     .WithOpenApi();
 
 // GET /api/books
-booksGroup.MapGet("", async (ApplicationDbContext context) =>
+booksGroup.MapGet("", async (IBookService bookService) =>
 {
-    var books = await context.Books
-        .Include(b => b.BookAuthors)
-        .ThenInclude(ba => ba.Author)
-        .Select(b => new BookResponse(
-            b.Id,
-            b.Title,
-            b.Description,
-            b.PublishDate,
-            b.BookAuthors.Select(ba => new AuthorResponse(ba.Author.Id, ba.Author.Name)).ToList()))
-        .ToListAsync();
-    return Results.Ok(books);
+    var books = await bookService.GetAllAsync();
+    return Results.Ok(books.Select(b => b.ToResponse()).ToList());
 })
 .WithName("GetBooks")
 .Produces<List<BookResponse>>(200)
 .WithDescription("Get all books with their authors");
 
 // GET /api/books/{id}
-booksGroup.MapGet("{id}", async (
+booksGroup.MapGet("{id:int}", async (
     int id,
-    ApplicationDbContext context) =>
+    IBookService bookService) =>
 {
-    var book = await context.Books
-        .Include(b => b.BookAuthors)
-        .ThenInclude(ba => ba.Author)
-        .SingleOrDefaultAsync(b => b.Id == id);
-
+    var book = await bookService.GetByIdAsync(id);
+    
     if (book is null)
         return Results.NotFound();
 
-    var bookResponse = new BookResponse(
-        book.Id,
-        book.Title,
-        book.Description,
-        book.PublishDate,
-        book.BookAuthors.Select(ba => new AuthorResponse(ba.Author.Id, ba.Author.Name)).ToList());
-
-    return Results.Ok(bookResponse);
+    return Results.Ok(book.ToResponse());
 })
 .WithName("GetBookById")
 .Produces<BookResponse>(200)
@@ -130,27 +97,11 @@ booksGroup.MapGet("{id}", async (
 
 // POST /api/books
 booksGroup.MapPost("", async (
-    ApplicationDbContext context,
+    IBookService bookService,
     CreateBookRequest request) =>
 {
-    var book = new Book
-    {
-        Title = request.Title,
-        Description = request.Description,
-        PublishDate = request.PublishDate
-    };
-
-    context.Books.Add(book);
-    await context.SaveChangesAsync();
-
-    var bookResponse = new BookResponse(
-        book.Id,
-        book.Title,
-        book.Description,
-        book.PublishDate,
-        []);
-
-    return Results.Created($"/api/books/{book.Id}", bookResponse);
+    var book = await bookService.CreateAsync(request.ToCreateBookDto());
+    return Results.Created($"/api/books/{book.Id}", book.ToResponse());
 })
 .WithName("CreateBook")
 .Produces<BookResponse>(201)
@@ -158,35 +109,16 @@ booksGroup.MapPost("", async (
 .WithDescription("Create a new book");
 
 // PUT /api/books/{id}
-booksGroup.MapPut("{id}", async (
+booksGroup.MapPut("{id:int}", async (
     int id,
-    ApplicationDbContext context,
+    IBookService bookService,
     UpdateBookRequest request) =>
 {
-    var book = await context.Books.FindAsync(id);
-    if (book is null)
-        return Results.NotFound();
-
-    if (!string.IsNullOrEmpty(request.Title))
-        book.Title = request.Title;
-
-    if (!string.IsNullOrEmpty(request.Description))
-        book.Description = request.Description;
-
-    if (request.PublishDate.HasValue)
-        book.PublishDate = request.PublishDate.Value;
-
-    context.Books.Update(book);
-    await context.SaveChangesAsync();
-
-    var bookResponse = new BookResponse(
-        book.Id,
-        book.Title,
-        book.Description,
-        book.PublishDate,
-        []);
-
-    return Results.Ok(bookResponse);
+    var book = await bookService.UpdateAsync(id, request.ToUpdateBookDto());
+    
+    return book is null 
+        ? Results.NotFound() 
+        : Results.Ok(book.ToResponse());
 })
 .WithName("UpdateBook")
 .Produces<BookResponse>(200)
@@ -203,33 +135,13 @@ var bookAuthorsGroup = booksGroup.MapGroup("{id}/authors")
 bookAuthorsGroup.MapPost("{authorId}", async (
     int id,
     int authorId,
-    ApplicationDbContext context) =>
+    IBookService bookService) =>
 {
-    var book = await context.Books
-        .Include(b => b.BookAuthors)
-        .ThenInclude(bookAuthor => bookAuthor.Author)
-        .SingleOrDefaultAsync(b => b.Id == id);
-    if (book is null)
-        return Results.NotFound("Book not found");
-
-    var author = await context.Authors.SingleOrDefaultAsync(a => a.Id == authorId);
-    if (author is null)
-        return Results.NotFound("Author not found");
-
-    if (book.BookAuthors.Any(ba => ba.AuthorId == authorId))
-        return Results.BadRequest("Author is already assigned to this book");
-
-    book.AddAuthor(author);
-    await context.SaveChangesAsync();
-
-    var bookResponse = new BookResponse(
-        book.Id,
-        book.Title,
-        book.Description,
-        book.PublishDate,
-        book.BookAuthors.Select(ba => new AuthorResponse(ba.Author.Id, ba.Author.Name)).ToList());
-
-    return Results.Ok(bookResponse);
+    var book = await bookService.AddAuthorAsync(id, authorId);
+    
+    return book is null 
+        ? Results.NotFound("Book not found, author not found, or author is already assigned to this book") 
+        : Results.Ok(book.ToResponse());
 })
 .WithName("AddAuthorToBook")
 .Produces<BookResponse>(200)
@@ -241,32 +153,13 @@ bookAuthorsGroup.MapPost("{authorId}", async (
 bookAuthorsGroup.MapDelete("{authorId}", async (
     int id,
     int authorId,
-    ApplicationDbContext context) =>
+    IBookService bookService) =>
 {
-    var book = await context.Books
-        .Include(b => b.BookAuthors)
-        .ThenInclude(ba => ba.Author)
-        .SingleOrDefaultAsync(b => b.Id == id);
-    if (book is null)
-        return Results.NotFound("Book not found");
-
-    var bookAuthor = book.BookAuthors.FirstOrDefault(ba => ba.AuthorId == authorId);
-    if (bookAuthor is null)
-        return Results.NotFound("Author is not assigned to this book");
-
-    var authorName = bookAuthor.Author.Name;
-
-    book.RemoveAuthor(authorId, authorName);
-    await context.SaveChangesAsync();
-
-    var bookResponse = new BookResponse(
-        book.Id,
-        book.Title,
-        book.Description,
-        book.PublishDate,
-        book.BookAuthors.Select(ba => new AuthorResponse(ba.Author.Id, ba.Author.Name)).ToList());
-
-    return Results.Ok(bookResponse);
+    var book = await bookService.RemoveAuthorAsync(id, authorId);
+    
+    return book is null 
+        ? Results.NotFound("Book not found or author is not assigned to this book") 
+        : Results.Ok(book.ToResponse());
 })
 .WithName("RemoveAuthorFromBook")
 .Produces<BookResponse>(200)
@@ -282,35 +175,17 @@ var changesGroup = booksGroup.MapGroup("{id}/changes")
 // GET /api/books/{id}/changes
 changesGroup.MapGet("", async (
     int id,
-    ApplicationDbContext context,
+    IChangeLogService changeLogService,
     [AsParameters] ChangeLogFilterRequest filter,
     [AsParameters] PaginationRequest pagination) =>
 {
-    var query = context.BookChangeLogs.AsQueryable();
-
-    query = query
-        .ApplyFiltering(id, filter)
-        .ApplySorting(filter.OrderBy, filter.SortOrder);
-
-    var totalCount = await query.CountAsync();
-
-    var changes = await query
-        .ApplyPagination(pagination)
-        .Select(cl => new BookChangeLogResponse(
-            cl.Id,
-            cl.BookId,
-            cl.FieldName,
-            cl.OldValue,
-            cl.NewValue,
-            cl.ChangedAt,
-            cl.Description,
-            cl.ChangedBy,
-            cl.ChangeType.ToString(),
-            cl.AuthorId))
-        .ToListAsync();
+    var (logs, totalCount) = await changeLogService.GetBookChangeLogsAsync(
+        id,
+        filter.ToChangeLogFilterDto(),
+        pagination.ToPaginationDto());
 
     var result = new PagedResult<BookChangeLogResponse>(
-        changes,
+        logs.Select(l => l.ToResponse()).ToList(),
         totalCount,
         pagination.PageNumber,
         pagination.PageSize);

@@ -1,19 +1,9 @@
-using BookChangeTracker.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 namespace BookChangeTracker.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApplicationDbContext(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-
-        return services;
-    }
-
     public static IServiceCollection AddSwagger(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
@@ -27,5 +17,23 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+}
+
+public static class WebApplicationExtensions
+{
+    public static WebApplication UseSwaggerUI(this WebApplication app)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Book Change Tracker API v1");
+                options.RoutePrefix = string.Empty;
+            });
+        }
+
+        return app;
     }
 }
