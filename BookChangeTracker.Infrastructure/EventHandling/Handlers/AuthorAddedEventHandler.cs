@@ -1,9 +1,11 @@
+using BookChangeTracker.Domain.Abstractions;
 using BookChangeTracker.Domain.Models.Entities;
 using BookChangeTracker.Domain.Models.Events;
+using BookChangeTracker.Infrastructure.Abstractions;
 
-namespace BookChangeTracker.Infrastructure.EventHandlers;
+namespace BookChangeTracker.Infrastructure.EventHandling.Handlers;
 
-public class AuthorAddedEventHandler(ApplicationDbContext context) : IEventHandler<AuthorAddedToBookEvent>
+public class AuthorAddedEventHandler(IChangeLogRepository changeLogRepository) : IEventHandler<AuthorAddedToBookEvent>
 {
     public async Task HandleAsync(AuthorAddedToBookEvent @event)
     {
@@ -19,7 +21,6 @@ public class AuthorAddedEventHandler(ApplicationDbContext context) : IEventHandl
             ChangeType = @event.ChangeType
         };
 
-        context.BookChangeLogs.Add(changeLog);
-        await context.SaveChangesAsync();
+        await changeLogRepository.CreateAsync(changeLog);
     }
 }

@@ -2,9 +2,9 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using BookChangeTracker.Domain.Abstractions;
 
-namespace BookChangeTracker.Infrastructure;
+namespace BookChangeTracker.Infrastructure.EventHandling.Services;
 
-public class DomainEventPublisher : IDomainEventPublisher
+public class EventPublisher : IEventPublisher
 {
     private readonly ConcurrentDictionary<Type, ImmutableList<Delegate>> _subscribers = new();
 

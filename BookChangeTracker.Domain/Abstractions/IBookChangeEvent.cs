@@ -1,4 +1,6 @@
-namespace BookChangeTracker.Domain.Models.Events;
+using BookChangeTracker.Domain.Models;
+
+namespace BookChangeTracker.Domain.Abstractions;
 
 public interface IBookChangeEvent : IDomainEvent
 {

@@ -7,7 +7,7 @@ namespace BookChangeTracker.Infrastructure;
 
 public class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
-    IDomainEventPublisher eventPublisher)
+    IEventPublisher eventPublisher)
     : DbContext(options)
 {
     public DbSet<Book> Books { get; set; }
@@ -135,7 +135,7 @@ public class ApplicationDbContext(
 
         var allEvents = books.SelectMany(b => b.DomainEvents).ToList();
         
-        await Task.WhenAll(allEvents.Select(e => eventPublisher.PublishAsync(e)));
+        await Task.WhenAll(allEvents.Select(eventPublisher.PublishAsync));
 
         foreach (var book in books)
         {

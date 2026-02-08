@@ -1,3 +1,4 @@
+using BookChangeTracker.Domain.Abstractions;
 using BookChangeTracker.Domain.Models.Events;
 
 namespace BookChangeTracker.Domain.Models.Entities;

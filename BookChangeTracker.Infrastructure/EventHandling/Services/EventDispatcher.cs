@@ -1,15 +1,10 @@
-using BookChangeTracker.Domain.Models.Events;
-using BookChangeTracker.Infrastructure.EventHandlers;
+using BookChangeTracker.Domain.Abstractions;
+using BookChangeTracker.Infrastructure.EventHandling.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BookChangeTracker.Infrastructure;
+namespace BookChangeTracker.Infrastructure.EventHandling.Services;
 
-public interface IDomainEventDispatcher
-{
-    Task DispatchAsync(IDomainEvent @event);
-}
-
-public class DomainEventDispatcher(IServiceProvider serviceProvider) : IDomainEventDispatcher
+public class EventDispatcher(IServiceProvider serviceProvider) : IEventDispatcher
 {
     public async Task DispatchAsync(IDomainEvent @event)
     {
@@ -17,7 +12,8 @@ public class DomainEventDispatcher(IServiceProvider serviceProvider) : IDomainEv
         var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
         
         using var scope = serviceProvider.CreateScope();
-        if (scope.ServiceProvider.GetService(handlerType) is not { } handler) return;
+        var handler = scope.ServiceProvider.GetService(handlerType);
+        if (handler is null) return;
 
         await (Task)handlerType
             .GetMethod(nameof(IEventHandler<IDomainEvent>.HandleAsync))!
