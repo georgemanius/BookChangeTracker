@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BookChangeTracker.Infrastructure\BookChangeTracker.Infrastructure.csproj" />
     <ProjectReference Include="..\BookChangeTracker.Domain\BookChangeTracker.Domain.csproj" />
+    <ProjectReference Include="..\BookChangeTracker.Application\BookChangeTracker.Application.csproj" />
   </ItemGroup>
 
 </Project>
