@@ -1,3 +1,5 @@
+using BookChangeTracker.Domain.Abstractions;
+
 namespace BookChangeTracker.Application.Models;
 
 public record ChangeLogFilterDto(
@@ -5,5 +7,5 @@ public record ChangeLogFilterDto(
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     string? ChangedBy = null,
-    string OrderBy = "ChangedAt",
-    string SortOrder = "Descending");
+    ChangeLogSortFields OrderBy = ChangeLogSortFields.ChangedAt,
+    SortOrder SortOrder = SortOrder.Descending) : IFilterDto;

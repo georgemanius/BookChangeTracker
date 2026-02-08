@@ -26,8 +26,8 @@ public static class ApiMappingExtensions
             request.FromDate,
             request.ToDate,
             request.ChangedBy,
-            request.OrderBy.ToString(),
-            request.SortOrder.ToString());
+            request.OrderBy,
+            request.SortOrder);
 
     public static PaginationDto ToPaginationDto(this PaginationRequest request) =>
         new(

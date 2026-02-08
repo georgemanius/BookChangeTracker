@@ -1,4 +1,4 @@
-namespace BookChangeTracker.Infrastructure.Models.Enums;
+namespace BookChangeTracker.Domain.Abstractions;
 
 public enum SortOrder
 {

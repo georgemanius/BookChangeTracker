@@ -1,7 +1,7 @@
+using BookChangeTracker.Domain.Abstractions;
 using BookChangeTracker.Domain.Models.Entities;
 using BookChangeTracker.Infrastructure.Abstractions;
 using BookChangeTracker.Infrastructure.Extensions;
-using BookChangeTracker.Infrastructure.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookChangeTracker.Infrastructure.Repositories;

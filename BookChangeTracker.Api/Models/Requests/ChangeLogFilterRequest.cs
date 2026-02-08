@@ -1,4 +1,4 @@
-using BookChangeTracker.Api.Models.Enums;
+using BookChangeTracker.Domain.Abstractions;
 
 namespace BookChangeTracker.Api.Models.Requests;
 

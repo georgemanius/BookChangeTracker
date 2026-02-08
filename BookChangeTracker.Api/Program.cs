@@ -4,7 +4,6 @@ using BookChangeTracker.Api.Models.Responses;
 using BookChangeTracker.Application.Abstractions;
 using BookChangeTracker.Application.Extensions;
 using BookChangeTracker.Domain.Abstractions;
-using BookChangeTracker.Domain.Models.Events;
 using BookChangeTracker.Infrastructure;
 using BookChangeTracker.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
