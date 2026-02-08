@@ -1,5 +1,4 @@
 using BookChangeTracker.Domain.Abstractions;
-using BookChangeTracker.Infrastructure.EventHandling.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BookChangeTracker.Infrastructure.EventHandling.Services;

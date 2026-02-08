@@ -1,5 +1,3 @@
-using BookChangeTracker.Domain.Abstractions;
-
 namespace BookChangeTracker.Domain.Abstractions;
 
 public interface IEventPublisher

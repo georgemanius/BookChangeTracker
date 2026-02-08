@@ -1,5 +1,4 @@
 using BookChangeTracker.Domain.Models.Entities;
-using BookChangeTracker.Infrastructure.Repositories;
 
 namespace BookChangeTracker.Infrastructure.Abstractions;
 
