@@ -19,11 +19,11 @@ public class AuthorService(IAuthorRepository authorRepository) : IAuthorService
         return authors.Select(a => a.ToAuthorDto()).ToList();
     }
 
-    public async Task<AuthorDto> CreateAsync(CreateAuthorDto createAuthorDto)
+    public async Task<Result> CreateAsync(CreateAuthorDto createAuthorDto)
     {
         var author = createAuthorDto.ToAuthor();
         var created = await authorRepository.CreateAsync(author);
-        return created.ToAuthorDto();
+        return Result.Success(created.ToAuthorDto());
     }
 
     public async Task<bool> DeleteAsync(int id) => await authorRepository.DeleteAsync(id);

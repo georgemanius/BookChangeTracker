@@ -5,15 +5,21 @@ using BookChangeTracker.Infrastructure.Abstractions;
 
 namespace BookChangeTracker.Application.Services;
 
-
-public class ChangeLogService(IChangeLogRepository changeLogRepository) : IChangeLogService
+public class ChangeLogService(
+    IChangeLogRepository changeLogRepository,
+    IBookRepository bookRepository) : IChangeLogService
 {
-    public async Task<(List<BookChangeLogDto> Logs, int TotalCount)> GetBookChangeLogsAsync(
+    public async Task<Result> GetBookChangeLogsAsync(
         int bookId,
         ChangeLogFilterDto filter,
         PaginationDto pagination)
     {
+        var book = await bookRepository.GetByIdAsync(bookId);
+        if (book is null)
+            return Result.Failure(new Error(ErrorCodes.BookNotFound, $"Book with id {bookId} does not exist"));
+
         var (logs, totalCount) = await changeLogRepository.GetByBookIdAsync(bookId, filter, pagination);
-        return (logs.Select(l => l.ToBookChangeLogDto()).ToList(), totalCount);
+        var result = (logs.Select(l => l.ToBookChangeLogDto()).ToList(), totalCount);
+        return Result.Success(result);
     }
 }

@@ -1,8 +1,10 @@
 using BookChangeTracker.Api.Extensions;
+using BookChangeTracker.Api.Middleware;
 using BookChangeTracker.Api.Models.Requests;
 using BookChangeTracker.Api.Models.Responses;
 using BookChangeTracker.Application.Abstractions;
 using BookChangeTracker.Application.Extensions;
+using BookChangeTracker.Application.Models;
 using BookChangeTracker.Domain.Abstractions;
 using BookChangeTracker.Infrastructure;
 using BookChangeTracker.Infrastructure.Extensions;
@@ -17,6 +19,7 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
@@ -53,12 +56,18 @@ authorsGroup.MapPost("", async (
     IAuthorService authorService,
     CreateAuthorRequest request) =>
 {
-    var author = await authorService.CreateAsync(request.ToCreateAuthorDto());
-    return Results.Created($"/api/authors/{author.Id}", author.ToResponse());
+    var result = await authorService.CreateAsync(request.ToCreateAuthorDto());
+    
+    return result switch
+    {
+        Result.SuccessResult<AuthorDto> success => Results.Created($"/api/authors/{success.Data.Id}", success.Data.ToResponse()),
+        Result.FailureResult failure => Results.BadRequest(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("CreateAuthor")
 .Produces<AuthorResponse>(201)
-.Produces(400)
+.Produces<ErrorResponse>(400)
 .WithDescription("Create a new author");
 
 // BOOKS
@@ -82,16 +91,18 @@ booksGroup.MapGet("{id:int}", async (
     int id,
     IBookService bookService) =>
 {
-    var book = await bookService.GetByIdAsync(id);
+    var result = await bookService.GetByIdAsync(id);
     
-    if (book is null)
-        return Results.NotFound();
-
-    return Results.Ok(book.ToResponse());
+    return result switch
+    {
+        Result.SuccessResult<BookDto> success => Results.Ok(success.Data.ToResponse()),
+        Result.FailureResult failure => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("GetBookById")
 .Produces<BookResponse>(200)
-.Produces(404)
+.Produces<ErrorResponse>(404)
 .WithDescription("Get a specific book by ID");
 
 // POST /api/books
@@ -99,12 +110,18 @@ booksGroup.MapPost("", async (
     IBookService bookService,
     CreateBookRequest request) =>
 {
-    var book = await bookService.CreateAsync(request.ToCreateBookDto());
-    return Results.Created($"/api/books/{book.Id}", book.ToResponse());
+    var result = await bookService.CreateAsync(request.ToCreateBookDto());
+    
+    return result switch
+    {
+        Result.SuccessResult<BookDto> success => Results.Created($"/api/books/{success.Data.Id}", success.Data.ToResponse()),
+        Result.FailureResult failure => Results.BadRequest(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("CreateBook")
 .Produces<BookResponse>(201)
-.Produces(400)
+.Produces<ErrorResponse>(400)
 .WithDescription("Create a new book");
 
 // PUT /api/books/{id}
@@ -113,15 +130,18 @@ booksGroup.MapPut("{id:int}", async (
     IBookService bookService,
     UpdateBookRequest request) =>
 {
-    var book = await bookService.UpdateAsync(id, request.ToUpdateBookDto());
+    var result = await bookService.UpdateAsync(id, request.ToUpdateBookDto());
     
-    return book is null 
-        ? Results.NotFound() 
-        : Results.Ok(book.ToResponse());
+    return result switch
+    {
+        Result.SuccessResult<BookDto> success => Results.Ok(success.Data.ToResponse()),
+        Result.FailureResult failure => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("UpdateBook")
 .Produces<BookResponse>(200)
-.Produces(404)
+.Produces<ErrorResponse>(404)
 .WithDescription("Update a book's properties");
 
 // AUTHORS
@@ -136,16 +156,23 @@ bookAuthorsGroup.MapPost("{authorId:int}", async (
     int authorId,
     IBookService bookService) =>
 {
-    var book = await bookService.AddAuthorAsync(id, authorId);
+    var result = await bookService.AddAuthorAsync(id, authorId);
     
-    return book is null 
-        ? Results.NotFound("Book not found, author not found, or author is already assigned to this book") 
-        : Results.Ok(book.ToResponse());
+    return result switch
+    {
+        Result.SuccessResult<BookDto> success => Results.Ok(success.Data.ToResponse()),
+        Result.FailureResult failure when failure.Error.Code == ErrorCodes.BookNotFound || failure.Error.Code == ErrorCodes.AuthorNotFound
+            => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        Result.FailureResult failure when failure.Error.Code == ErrorCodes.AuthorAlreadyAssigned
+            => Results.BadRequest(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        Result.FailureResult failure => Results.BadRequest(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("AddAuthorToBook")
 .Produces<BookResponse>(200)
-.Produces(404)
-.Produces(400)
+.Produces<ErrorResponse>(404)
+.Produces<ErrorResponse>(400)
 .WithDescription("Add an author to a book");
 
 // DELETE /api/books/{id}/authors/{authorId}
@@ -154,15 +181,18 @@ bookAuthorsGroup.MapDelete("{authorId:int}", async (
     int authorId,
     IBookService bookService) =>
 {
-    var book = await bookService.RemoveAuthorAsync(id, authorId);
+    var result = await bookService.RemoveAuthorAsync(id, authorId);
     
-    return book is null 
-        ? Results.NotFound("Book not found or author is not assigned to this book") 
-        : Results.Ok(book.ToResponse());
+    return result switch
+    {
+        Result.SuccessResult<BookDto> success => Results.Ok(success.Data.ToResponse()),
+        Result.FailureResult failure => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("RemoveAuthorFromBook")
 .Produces<BookResponse>(200)
-.Produces(404)
+.Produces<ErrorResponse>(404)
 .WithDescription("Remove an author from a book");
 
 // BOOK CHANGES
@@ -178,22 +208,26 @@ changesGroup.MapGet("", async (
     [AsParameters] ChangeLogFilterRequest filter,
     [AsParameters] PaginationRequest pagination) =>
 {
-    var (logs, totalCount) = await changeLogService.GetBookChangeLogsAsync(
+    var result = await changeLogService.GetBookChangeLogsAsync(
         id,
         filter.ToChangeLogFilterDto(),
         pagination.ToPaginationDto());
 
-    var result = new PagedResult<BookChangeLogResponse>(
-        logs.Select(l => l.ToResponse()).ToList(),
-        totalCount,
-        pagination.PageNumber,
-        pagination.PageSize);
-
-    return Results.Ok(result);
+    return result switch
+    {
+        Result.SuccessResult<(List<BookChangeLogDto> Logs, int TotalCount)> success =>
+            Results.Ok(new PagedResult<BookChangeLogResponse>(
+                success.Data.Logs.Select(l => l.ToResponse()).ToList(),
+                success.Data.TotalCount,
+                pagination.PageNumber,
+                pagination.PageSize)),
+        Result.FailureResult failure => Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message)),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("GetBookChanges")
 .Produces<PagedResult<BookChangeLogResponse>>(200)
-.Produces(404)
+.Produces<ErrorResponse>(404)
 .WithDescription("Get change history for a book with filtering, ordering, and pagination");
 
 app.Run();
