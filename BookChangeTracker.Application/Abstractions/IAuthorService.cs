@@ -4,8 +4,8 @@ namespace BookChangeTracker.Application.Abstractions;
 
 public interface IAuthorService
 {
-    Task<AuthorDto?> GetByIdAsync(int id);
-    Task<List<AuthorDto>> GetAllAsync();
+    Task<Result> GetByIdAsync(int id);
+    Task<Result> GetAllAsync();
     Task<Result> CreateAsync(CreateAuthorDto createAuthorDto);
-    Task<bool> DeleteAsync(int id);
+    Task<Result> DeleteAsync(int id);
 }

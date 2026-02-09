@@ -44,8 +44,13 @@ var authorsGroup = app.MapGroup("/api/authors")
 // GET /api/authors
 authorsGroup.MapGet("", async (IAuthorService authorService) =>
 {
-    var authors = await authorService.GetAllAsync();
-    return Results.Ok(authors.Select(a => a.ToResponse()).ToList());
+    var result = await authorService.GetAllAsync();
+    
+    return result switch
+    {
+        Result.SuccessResult<List<AuthorDto>> success => Results.Ok(success.Data.Select(a => a.ToResponse()).ToList()),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("GetAuthors")
 .Produces<List<AuthorResponse>>(200)
@@ -70,6 +75,24 @@ authorsGroup.MapPost("", async (
 .Produces<ErrorResponse>(400)
 .WithDescription("Create a new author");
 
+// DELETE /api/authors/{id}
+authorsGroup.MapDelete("{id:int}", async (
+    int id,
+    IAuthorService authorService) =>
+{
+    var result = await authorService.DeleteAsync(id);
+    
+    return result is Result.SuccessResult
+        ? Results.NoContent()
+        : result is Result.FailureResult failure
+            ? Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message))
+            : Results.StatusCode(500);
+})
+.WithName("DeleteAuthor")
+.Produces(204)
+.Produces<ErrorResponse>(404)
+.WithDescription("Delete an author");
+
 // BOOKS
 
 var booksGroup = app.MapGroup("/api/books")
@@ -79,8 +102,13 @@ var booksGroup = app.MapGroup("/api/books")
 // GET /api/books
 booksGroup.MapGet("", async (IBookService bookService) =>
 {
-    var books = await bookService.GetAllAsync();
-    return Results.Ok(books.Select(b => b.ToResponse()).ToList());
+    var result = await bookService.GetAllAsync();
+    
+    return result switch
+    {
+        Result.SuccessResult<List<BookDto>> success => Results.Ok(success.Data.Select(b => b.ToResponse()).ToList()),
+        _ => Results.StatusCode(500)
+    };
 })
 .WithName("GetBooks")
 .Produces<List<BookResponse>>(200)
@@ -143,6 +171,24 @@ booksGroup.MapPut("{id:int}", async (
 .Produces<BookResponse>(200)
 .Produces<ErrorResponse>(404)
 .WithDescription("Update a book's properties");
+
+// DELETE /api/books/{id}
+booksGroup.MapDelete("{id:int}", async (
+    int id,
+    IBookService bookService) =>
+{
+    var result = await bookService.DeleteAsync(id);
+    
+    return result is Result.SuccessResult
+        ? Results.NoContent()
+        : result is Result.FailureResult failure
+            ? Results.NotFound(new ErrorResponse(failure.Error.Code, failure.Error.Message))
+            : Results.StatusCode(500);
+})
+.WithName("DeleteBook")
+.Produces(204)
+.Produces<ErrorResponse>(404)
+.WithDescription("Delete a book");
 
 // AUTHORS
 

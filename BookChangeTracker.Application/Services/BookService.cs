@@ -16,10 +16,10 @@ public class BookService(IBookRepository bookRepository, IAuthorRepository autho
         return Result.Success(book.ToBookDto());
     }
 
-    public async Task<List<BookDto>> GetAllAsync()
+    public async Task<Result> GetAllAsync()
     {
         var books = await bookRepository.GetAllWithAuthorsAsync();
-        return books.Select(b => b.ToBookDto()).ToList();
+        return Result.Success(books.Select(b => b.ToBookDto()).ToList());
     }
 
     public async Task<Result> CreateAsync(CreateBookDto createBookDto)
@@ -40,7 +40,14 @@ public class BookService(IBookRepository bookRepository, IAuthorRepository autho
         return Result.Success(updated.ToBookDto());
     }
 
-    public async Task<bool> DeleteAsync(int id) => await bookRepository.DeleteAsync(id);
+    public async Task<Result> DeleteAsync(int id)
+    {
+        var deleted = await bookRepository.DeleteAsync(id);
+        if (!deleted)
+            return Result.Failure(new Error(ErrorCodes.BookNotFound, $"Book with id {id} does not exist"));
+        
+        return Result.Success();
+    }
 
     public async Task<Result> AddAuthorAsync(int bookId, int authorId)
     {
