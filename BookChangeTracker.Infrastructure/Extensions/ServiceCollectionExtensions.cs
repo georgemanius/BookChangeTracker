@@ -1,7 +1,5 @@
 using BookChangeTracker.Domain.Abstractions;
-using BookChangeTracker.Domain.Models.Events;
 using BookChangeTracker.Infrastructure.Abstractions;
-using BookChangeTracker.Infrastructure.EventHandling.Handlers;
 using BookChangeTracker.Infrastructure.EventHandling.Services;
 using BookChangeTracker.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +15,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddApplicationDbContext(configuration);
-        services.AddDomainEventHandling();
+        services.AddEventPublishing();
         services.AddRepositories();
 
         return services;
@@ -33,14 +31,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddDomainEventHandling(this IServiceCollection services)
+    public static IServiceCollection AddEventPublishing(this IServiceCollection services)
     {
         services.AddSingleton<IEventPublisher, EventPublisher>();
         services.AddSingleton<IEventDispatcher, EventDispatcher>();
-
-        services.AddScoped<IEventHandler<AuthorAddedToBookEvent>, AuthorAddedEventHandler>();
-        services.AddScoped<IEventHandler<AuthorRemovedFromBookEvent>, AuthorRemovedEventHandler>();
-        services.AddScoped<IEventHandler<BookPropertyChangedEvent>, BookPropertyChangedEventHandler>();
 
         return services;
     }

@@ -3,7 +3,7 @@ using BookChangeTracker.Domain.Models.Entities;
 using BookChangeTracker.Domain.Models.Events;
 using BookChangeTracker.Infrastructure.Abstractions;
 
-namespace BookChangeTracker.Infrastructure.EventHandling.Handlers;
+namespace BookChangeTracker.Application.EventHandlers;
 
 public class AuthorAddedEventHandler(IChangeLogRepository changeLogRepository) : IEventHandler<AuthorAddedToBookEvent>
 {
